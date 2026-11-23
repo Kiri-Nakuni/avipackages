@@ -1,0 +1,16 @@
+% speech keeps the spaces of its text; song carries its MML in braces; once per still
+%! pages: 6
+%! special: speak ch=daisy tone=normal speed=1 pace=1 text={D.EY Z.IY / K.AE.N.T} = 1
+%! special: sing ch=daisy mml={t150 l4 q8 "D.EY Z.IY" o4 d2&8 o3 b2.} = 1
+%! special: speak ch=daisy tone=normal speed=1 pace=1 lang=ja text={KoNnNiChiWa} = 1
+%! special: sing ch=daisy lang=ja gain=0.5 mml={"Ra" c} = 1
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avivoice}
+\avivoiceDefine{daisy}{lang=en}
+\avivoiceSetup{ch=daisy}
+\begin{document}
+\dviaviStill{2}{\avivoiceSpeak{D.EY Z.IY / K.AE.N.T}}
+\dviaviStill{2}{\avivoiceSing{t150 l4 q8 "D.EY Z.IY" o4 d2&8 o3 b2.}}
+\speak{lang=ja, text=KoNnNiChiWa}\sing{lang=ja, gain=0.5, mml={"Ra" c}}
+\dviaviStill{2}{y}
+\end{document}

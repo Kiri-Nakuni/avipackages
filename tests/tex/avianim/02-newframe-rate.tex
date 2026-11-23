@@ -1,0 +1,16 @@
+% \newframe[rate] changes the rate from there on; \newframe* is \newframe
+% 1/12 s (2 frames), 1/24, 1/24 (1 each), 1/6 s (4 frames) at 24 fps
+%! pages: 8
+\documentclass[fps=24,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\begin{animateinline}{12}
+a
+\newframe[24]
+b
+\newframe
+c
+\newframe*[6]
+d
+\end{animateinline}
+\end{document}

@@ -1,0 +1,6 @@
+/target
+*.aux
+*.log
+*.dvi
+*.avi
+__pycache__/

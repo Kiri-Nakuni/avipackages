@@ -1,0 +1,136 @@
+%% daisy.tex -- "Daisy Bell" (Harry Dacre, 1892) sung by square waves.
+%% The chorus twice: in English (ARPAbet), then in katakana English (romaji).
+%%   make            (uplatex daisy.tex && dviavi daisy.dvi)
+%% The voice is defined here with avivoice.sty; daisy.mix has the
+%% accompaniment.  150 beats a minute at 25 fps: one beat is 10 frames.
+\documentclass[fps=25,size=1280x720,mix=daisy.mix]{avi}
+\usepackage{tikz,avivoice}
+\usetikzlibrary{calc}
+
+%% the defaults (f0 140 Hz, formant 1) sung an octave below the tune, each
+%% formant a square wave restarted at every pitch period
+\avivoiceDefine{daisy}{engine=square, lang=en, breath=0.01, vib={5Hz,6c}}
+\avivoiceSetup{ch=daisy}
+
+\definecolor{sky}{RGB}{16,20,64}
+\definecolor{dusk}{RGB}{120,40,110}
+\definecolor{sung}{RGB}{255,210,80}
+\newcommand\beat{10}% frames
+
+%% the screen: a sky, a bicycle whose wheels turn with the frame count,
+%% #1 above the lyric line #2
+\newcommand\scene[2]{%
+  \begin{tikzpicture}
+    \useasboundingbox (0,0) rectangle (16,9);
+    \shade[top color=sky, bottom color=dusk] (0,0) rectangle (16,9);
+    \fill[black!70] (0,0) rectangle (16,1.6);
+    % the wheels turn 9 degrees a frame (kept small for PGF's arithmetic)
+    \edef\spin{\the\numexpr(\dviaviframe-(\dviaviframe/40)*40)*9\relax}%
+    \begin{scope}[shift={(8,2.75)}, line width=1.2pt, white]
+      \foreach \x in {-1.6,1.6} {
+        \draw (\x,0) circle (1.05);
+        \foreach \a in {0,30,...,150}
+          \draw[line width=.4pt] ($(\x,0)+(\a-\spin:1.05)$) -- ($(\x,0)+(\a+180-\spin:1.05)$);
+      }
+      \draw (-1.6,0) -- (-.6,1.2) -- (.9,1.2) -- (1.6,0) (-.6,1.2) -- (0,0) -- (.9,1.2)
+            (-1.6,0) -- (0,0) (.9,1.2) -- (1.05,1.55) (.75,1.65) -- (1.35,1.55)
+            (-.6,1.2) -- (-.7,1.45) (-.95,1.5) -- (-.45,1.5) (.4,1.2) -- (.35,1.45) (.1,1.5) -- (.6,1.5);
+    \end{scope}
+    \node[white!80!sky, font=\large] at (8,7.6) {#1};
+    \node[font=\Huge\bfseries] at (8,5.9) {#2};
+  \end{tikzpicture}}
+
+\ExplSyntaxOn
+%% \phrase{small text}{syllable/beats ...}: the line shown note by note, the
+%% note being sung in colour.  A syllable ending in - joins the next one.
+\seq_new:N \l_daisy_items_seq
+\int_new:N \l_daisy_now_int
+\tl_new:N \l_daisy_small_tl
+\tl_new:N \l_daisy_text_tl
+\bool_new:N \l_daisy_join_bool
+\cs_new:Npn \daisy_text:w #1 / #2 \q_stop {#1}
+\cs_new:Npn \daisy_beats:w #1 / #2 \q_stop {#2}
+\cs_new_protected:Npn \daisy_line:
+  {
+    \seq_map_indexed_inline:Nn \l_daisy_items_seq
+      {
+        \tl_set:Ne \l_daisy_text_tl { \daisy_text:w ##2 \q_stop }
+        \bool_set_false:N \l_daisy_join_bool
+        \tl_if_in:NnT \l_daisy_text_tl { - }
+          { \tl_remove_all:Nn \l_daisy_text_tl { - } \bool_set_true:N \l_daisy_join_bool }
+        \int_compare:nNnTF {##1} = \l_daisy_now_int
+          { \textcolor{sung}{\l_daisy_text_tl} }
+          { \int_compare:nNnTF {##1} < \l_daisy_now_int
+              { \textcolor{white}{\l_daisy_text_tl} }
+              { \textcolor{white!45!sky}{\l_daisy_text_tl} } }
+        \bool_if:NF \l_daisy_join_bool { \c_space_tl }
+      }
+    \unskip
+  }
+\NewDocumentCommand \phrase { m m }
+  {
+    \tl_set:Nn \l_daisy_small_tl {#1}
+    \seq_set_split:Nnn \l_daisy_items_seq { ~ } {#2}
+    \seq_map_indexed_inline:Nn \l_daisy_items_seq
+      {
+        \int_set:Nn \l_daisy_now_int {##1}
+        \dviaviFrames { \fp_eval:n { round ( \beat * \daisy_beats:w ##2 \q_stop ) } }
+          { \scene { \l_daisy_small_tl } { \daisy_line: } }
+      }
+  }
+\ExplSyntaxOff
+
+\begin{document}
+\pagecolor{black}\color{white}
+\dviaviStill{50}{\begin{tabular}{c}\Huge\bfseries Daisy Bell\\[1ex]
+  Harry Dacre (1892) --- avivoice, square formants\end{tabular}}
+
+%% intro: 4 bars
+\dviaviMark{song}
+\dviaviFrames{120}{\scene{Daisy Bell}{\textcolor{white!45!sky}{(a bicycle built for two)}}}
+
+%% ---------------------------------------------------------------- English
+\avivoiceSing{t150 l4 q8
+  "D.EY Z.IY D.EY Z.IY" o4 d2. o3 b2. g2. d2.
+  "G.IH.V M.IY Y.UH.R AE.N S.ER D.UW" e f+ g e2 g d1&4 r
+  "AY.M HH.AE.F K.R.EY Z.IY" a2. o4 d2. o3 b2. g2.
+  "AO.L F.AO.R DH.AH L.AH.V AH.V Y.UW" e f+ g a2 b a1&4
+  "IH.T W.OW.N.T B.IY AH S.T.AY L.IH.SH M.EH" b o4 c o3 b a o4 d2 o3 b a12 b12 a12
+  "R.IH.JH AY K.AE.N.T AH F.AO.R.D AH K.EH R.IH.JH" g1 a b2 g e2 g e d1
+  "B.AH.T Y.UW.L L.UH.K S.W.IY.T AH P.AA.N DH.AH S.IY.T" d g2 b a2. g g b a2
+  "AH.V AH B.AY S.IH K.AH.L B.IH.L.T F.AO.R T.UW" b8 o4 c8 d o3 b g a2 d g2.}
+\phrase{English}{Dai-/3 sy,/3 Dai-/3 sy,/3}
+\phrase{English}{give/1 me/1 your/1 an-/2 swer,/1 do!/6}
+\phrase{English}{I'm/3 half/3 cra-/3 zy/3}
+\phrase{English}{all/1 for/1 the/1 love/2 of/1 you./5}
+\phrase{English}{It/1 won't/1 be/1 a/1 sty-/2 lish/1 mar-/1 riage,/4}
+\phrase{English}{I/1 can't/2 af-/1 ford/2 a/1 car-/1 riage,/4}
+\phrase{English}{But/1 you'll/2 look/1 sweet/3 u-/1 pon/1 the/1 seat/2}
+\phrase{English}{of/0.5 a/0.5 bi-/1 cy-/1 cle/1 built/2 for/1 two./6}
+
+%% ---------------------------------------------------------------- romaji
+\avivoiceSing[lang=ja]{t150 l4 q8
+  "DeI|Ji-|DeI|Ji-" o4 d2. o3 b2. g2. d2.
+  "GiBu|Mi-|YuA|ANn|Sa-|Do-" e f+ g e2 g d1&4 r
+  "AIMu|Ha-Fu|KuReI|Ji-" a2. o4 d2. o3 b2. g2.
+  "O-Ru|Fo-|Za|RaBu|Obu|Yu-" e f+ g a2 b a1&4
+  "IQTo|WoNnTo|Bi-|A|SuTaI|RiQShu|Ma" b o4 c o3 b a o4 d2 o3 b a12 b12 a12
+  "RiQJi|AI|KyaNnTo|A|Fo-Do|A|Kya|RiQJi" g1 a b2 g e2 g e d1
+  "BaQTo|Yu-Ru|RuQKu|SuWi-To|A|PoNn|Za|Shi-To" d g2 b a2. g g b a2
+  "Obu|A|BaI|Shi|KuRu|BiRuTo|Fo-|Tsu-" b8 o4 c8 d o3 b g a2 d g2.}
+\phrase{ローマ字}{デイ-/3 ジー/3 デイ-/3 ジー/3}
+\phrase{ローマ字}{ギブ/1 ミー/1 ユア/1 アン-/2 サー/1 ドー/6}
+\phrase{ローマ字}{アイム/3 ハーフ/3 クレイ-/3 ジー/3}
+\phrase{ローマ字}{オール/1 フォー/1 ザ/1 ラブ/2 オブ/1 ユー/5}
+\phrase{ローマ字}{イット/1 ウォント/1 ビー/1 ア/1 スタイ-/2 リッシュ/1 マ-/1 リッジ/4}
+\phrase{ローマ字}{アイ/1 キャント/2 ア-/1 フォード/2 ア/1 キャ-/1 リッジ/4}
+\phrase{ローマ字}{バット/1 ユール/2 ルック/1 スウィート/3 ア-/1 ポン/1 ザ/1 シート/2}
+\phrase{ローマ字}{オブ/0.5 ア/0.5 バイ-/1 シ-/1 クル/1 ビルト/2 フォー/1 ツー/6}
+
+%% ending: the last chord, then the credits
+\dviaviFrames{30}{\scene{}{\textcolor{white!45!sky}{(a bicycle built for two)}}}
+\dviaviStill{75}{\large\begin{tabular}{c}
+  \textbf{Daisy Bell} --- Harry Dacre (1892)\\[1ex]
+  voice: avivoice (square formants) \quad accompaniment: daisy.mix\\
+  made with \LaTeX{} and dviavi\end{tabular}}
+\end{document}

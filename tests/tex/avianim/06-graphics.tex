@@ -1,0 +1,9 @@
+% each image shown for 2 video frames; \animategraphics keeps the width of a zero-padded first number: img/f01.png ... f03.png
+%! pages: 6
+%! special: f01.png = 2
+%! special: f03.png = 2
+\documentclass[fps=10,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\animategraphics[width=8cm]{5}{img/f}{01}{03}
+\end{document}

@@ -1,0 +1,15 @@
+% begin and end around every frame; player options are ignored; width, height, scale
+%! pages: 4
+%! log: BEGIN = 2
+%! log: END = 2
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\begin{animateinline}[begin={\typeout{BEGIN}}, end={\typeout{END}}, controls, loop, autoplay, poster=first, timeline=x.txt]{5}
+a
+\newframe
+b
+\end{animateinline}
+\begin{animateinline}[width=4cm]{5}a\end{animateinline}
+\begin{animateinline}[scale=2]{5}a\end{animateinline}
+\end{document}

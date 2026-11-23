@@ -1,0 +1,14 @@
+% errors instead of endless loops: a rate of 0 or below, \multiframe mixed with other content
+%! pages: 3
+%! errors: 3
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\begin{animateinline}{0}
+a
+\newframe[-2]
+b
+\newframe[5]
+x \multiframe{3}{iA=0+1}{y}
+\end{animateinline}
+\end{document}

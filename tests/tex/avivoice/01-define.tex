@@ -1,0 +1,13 @@
+% voices and phonemes go to dviavi as mixdef specials; a voice phoneme re-sends its voice
+%! pages: 1
+%! special: mixdef voice daisy { engine=square lang=en vib=5Hz,6c } = 1
+%! special: mixdef voice daisy { engine=square lang=en vib=5Hz,6c phoneme k { noise=-3dB dur=25ms } } = 1
+%! special: mixdef phoneme s { noise=0.5 } = 1
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avivoice}
+\avivoiceDefine{daisy}{engine=square, lang=en, vib={5Hz,6c}}
+\avivoicePhoneme[daisy]{k}{noise=-3dB, dur=25ms}
+\avivoicePhoneme{s}{noise=0.5}
+\begin{document}
+\dviaviStill{1}{x}
+\end{document}

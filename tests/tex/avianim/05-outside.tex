@@ -1,0 +1,9 @@
+% \multiframe outside animateinline: one video frame per frame (this used to loop forever)
+%! pages: 10
+%! special: dviavi: mark = 1
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\dviaviMark{song}
+\multiframe{10}{i=0+1}{こんにちは \i}
+\end{document}

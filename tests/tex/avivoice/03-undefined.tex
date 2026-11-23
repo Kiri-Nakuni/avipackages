@@ -1,0 +1,9 @@
+% a phoneme for a voice that is not defined is an error
+%! pages: 1
+%! errors: 1
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avivoice}
+\avivoicePhoneme[nobody]{k}{dur=20ms}
+\begin{document}
+\dviaviStill{1}{x}
+\end{document}

@@ -1,0 +1,11 @@
+% frames shorter than a video frame are typeset (counters go on) but not all shown:
+% 6 frames at 30 fps in a 10 fps video = 0.2 s = 2 video frames
+%! pages: 2
+%! log: F:6
+\documentclass[fps=10,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\begin{animateinline}{30}
+\multiframe{6}{iA=1+1}{\typeout{F:\iA}x}
+\end{animateinline}
+\end{document}

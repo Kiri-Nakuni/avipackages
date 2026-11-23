@@ -1,0 +1,13 @@
+% sound commands in a frame act once, even when the frame is shown for several video frames
+%! pages: 4
+%! special: dviavi: mark = 1
+%! special: dviavi: speak = 1
+\documentclass[fps=4,size=320x180]{avi}
+\usepackage{avianim}
+\begin{document}
+\begin{animateinline}{2}
+\dviaviMark{anim}a
+\newframe
+\speak{text=A}b
+\end{animateinline}
+\end{document}

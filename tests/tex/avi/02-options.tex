@@ -1,0 +1,13 @@
+% key=value options go to dviavi, the others to jsarticle; 12pt keeps the screen size (to 1sp)
+%! pages: 1
+%! log: MAG:1200
+%! log: PAPER-OK
+%! special: fps=30/1 = 1
+%! special: size=1280x720 = 1
+%! special: rate=44100 = 1
+\documentclass[12pt, fps=30, size=1280x720, rate=44100]{avi}
+\begin{document}
+\typeout{MAG:\the\mag}
+\typeout{\ifdim\dimexpr\paperwidth-160truemm\relax<2sp\ifdim\dimexpr\paperwidth-160truemm\relax>-2sp PAPER-OK\fi\fi}
+本文
+\end{document}

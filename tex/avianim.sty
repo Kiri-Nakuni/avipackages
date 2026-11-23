@@ -1,0 +1,269 @@
+%% avianim.sty -- animate-compatible frame animation for dviavi (avi class)
+%%
+%%   \begin{animateinline}[begin={\begin{tikzpicture}}, end={\end{tikzpicture}}]{12}
+%%     \draw (0,0) circle (1);
+%%   \newframe[24]
+%%     \multiframe{30}{rA=0+0.1, iB=1+1}{\draw (\rA,0) circle (1); \node {\iB};}
+%%   \end{animateinline}
+%%
+%% Each frame of the animation is typeset once and shown full screen (through
+%% \dviaviLayout) for as many video frames as its duration covers: an
+%% animation at 12 frames per second in a 24000/1001 video gives each frame
+%% about two video frames (rounded so the total time stays exact).
+%%
+%% From the animate package: the environment animateinline (also avianim),
+%% \newframe[rate] (\newframe* pauses in animate; here it is \newframe),
+%% \multiframe{n}{var=init+incr,...}{content} with i (integer), n, r, R (real)
+%% and d (dimension) variables, \animategraphics[opts]{rate}{base}{first}{last},
+%% and the options begin, end, width, height, scale.  Options for players
+%% (controls, loop, autoplay, poster, ...) are accepted and ignored.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesExplPackage{avianim}{2026/11/23}{1.1}{animate-compatible animation for dviavi}
+\RequirePackage{dviavi}
+\RequirePackage{graphicx}
+%% ---------------------------------------------------------------- state
+\tl_new:N \l__avianim_begin_tl
+\tl_new:N \l__avianim_end_tl
+\tl_new:N \l__avianim_width_tl
+\tl_new:N \l__avianim_height_tl
+\tl_new:N \l__avianim_scale_tl
+\fp_new:N \g__avianim_rate_fp    % animation frames per second
+\fp_new:N \g__avianim_time_fp    % seconds of the animation shown so far
+\int_new:N \g__avianim_shown_int % video frames shipped for it so far
+\box_new:N \l__avianim_frame_box
+\bool_new:N \l__avianim_active_bool  % inside an animation
+\bool_new:N \l__avianim_frame_bool   % typesetting one of its frames
+\tl_new:N \g__avianim_sound_tl       % sound specials of frames not shown yet
+\int_new:N \l__avianim_ship_int      % video frames for the current frame
+\seq_new:N \l__avianim_frames_seq
+
+\keys_define:nn { avianim }
+  {
+    begin  .tl_set:N = \l__avianim_begin_tl ,
+    end    .tl_set:N = \l__avianim_end_tl ,
+    width  .tl_set:N = \l__avianim_width_tl ,
+    height .tl_set:N = \l__avianim_height_tl ,
+    scale  .tl_set:N = \l__avianim_scale_tl ,
+    unknown .code:n = { } % player options: nothing to do in a video
+  }
+
+%% video frames per second
+\cs_new:Npn \__avianim_fps: { \dviavi_fps: }
+
+%% Shows the frame in \l__avianim_frame_box for one animation frame at the
+%% current rate: as many video frames as bring the total to round(time*fps).
+\cs_new_protected:Npn \__avianim_ship:
+  {
+    \fp_gadd:Nn \g__avianim_time_fp { 1 / \g__avianim_rate_fp }
+    \int_set:Nn \l__avianim_ship_int
+      { \fp_to_int:n { round ( \g__avianim_time_fp * \__avianim_fps: ) } - \g__avianim_shown_int }
+    \int_compare:nNnT { \l__avianim_ship_int } > { 0 }
+      {
+        \int_gadd:Nn \g__avianim_shown_int { \l__avianim_ship_int }
+        % the sounds go with the first video frame only
+        \dviaviStill { 1 } { \g__avianim_sound_tl \box_use:N \l__avianim_frame_box }
+        \tl_gclear:N \g__avianim_sound_tl
+        \int_compare:nNnT { \l__avianim_ship_int } > { 1 }
+          {
+            \dviaviStill { \int_eval:n { \l__avianim_ship_int - 1 } }
+              { \box_use:N \l__avianim_frame_box }
+          }
+      }
+  }
+%% Sound commands in a frame (\speak, \dviaviMark, ...) are kept for the
+%% first video frame that shows it (or the next one shown, if it is too short).
+%% Expanded now, as \special would (\speak's arguments are local).
+\cs_new_protected:Npn \__avianim_capture_special:n #1
+  { \tl_gput_right:Ne \g__avianim_sound_tl { \tex_special:D {#1} } }
+
+%% Sets the animation frame rate; one that is not positive would never end
+%% a frame, so it is an error and the video's rate is used instead.
+\cs_new_protected:Npn \__avianim_set_rate:n #1
+  {
+    \fp_gset:Nn \g__avianim_rate_fp {#1}
+    \fp_compare:nNnF { \g__avianim_rate_fp } > { 0 }
+      {
+        \msg_error:nne { avianim } { rate } { \fp_use:N \g__avianim_rate_fp }
+        \fp_gset:Nn \g__avianim_rate_fp { \__avianim_fps: }
+      }
+  }
+\msg_new:nnn { avianim } { rate }
+  { The~frame~rate~must~be~positive~(got~#1);~using~the~video's~rate. }
+
+%% Typesets one frame (begin code, content, end code; scaled if asked) once.
+\cs_new_protected:Npn \__avianim_typeset:n #1
+  {
+    \hbox_set:Nn \l__avianim_frame_box
+      {
+        \bool_set_true:N \l__avianim_frame_bool
+        \cs_set_eq:NN \dviavi_special:n \__avianim_capture_special:n
+        \l__avianim_begin_tl #1 \l__avianim_end_tl
+      }
+    \bool_lazy_or:nnTF { ! \tl_if_empty_p:N \l__avianim_width_tl } { ! \tl_if_empty_p:N \l__avianim_height_tl }
+      {
+        % \resizebox tests for `!' before expanding: give it the values
+        \hbox_set:Nn \l__avianim_frame_box
+          {
+            \use:e
+              {
+                \exp_not:N \resizebox
+                  { \tl_if_empty:NTF \l__avianim_width_tl { ! } { \exp_not:V \l__avianim_width_tl } }
+                  { \tl_if_empty:NTF \l__avianim_height_tl { ! } { \exp_not:V \l__avianim_height_tl } }
+              }
+              { \box_use:N \l__avianim_frame_box }
+          }
+      }
+      {
+        \tl_if_empty:NF \l__avianim_scale_tl
+          { \hbox_set:Nn \l__avianim_frame_box { \scalebox { \l__avianim_scale_tl } { \box_use:N \l__avianim_frame_box } } }
+      }
+    \__avianim_ship:
+  }
+
+%% ---------------------------------------------------------------- \multiframe
+%% variables: name=init+incr, the type from the first letter of the name
+\seq_new:N \l__avianim_vars_seq
+\tl_new:N \l__avianim_name_tl       % the variable being set up
+\tl_new:N \l__avianim_part_tl       % a part of animateinline
+\int_new:N \l__avianim_digits_int   % width of \animategraphics numbers
+\cs_new_protected:Npn \__avianim_var_init:w #1 = #2 + #3 \q_stop
+  {
+    \tl_set:Ne \l__avianim_name_tl { \tl_trim_spaces:n {#1} }
+    \seq_put_right:Ne \l__avianim_vars_seq { { \l__avianim_name_tl } { \tl_trim_spaces:n {#3} } }
+    \__avianim_var_set:Vn \l__avianim_name_tl {#2}
+  }
+\cs_new_protected:Npn \__avianim_var_set:nn #1#2
+  {
+    \str_case_e:nnF { \tl_head:n {#1} }
+      {
+        { i } { \cs_set:cpe {#1} { \int_eval:n {#2} } }
+        { d } { \cs_set:cpe {#1} { \dim_eval:n {#2} } }
+      }
+      { \cs_set:cpe {#1} { \fp_eval:n {#2} } } % n, r, R
+  }
+\cs_generate_variant:Nn \__avianim_var_set:nn { V }
+\cs_new_protected:Npn \__avianim_var_step:nn #1#2
+  {
+    \str_case_e:nnF { \tl_head:n {#1} }
+      {
+        { i } { \__avianim_var_set:nn {#1} { \use:c {#1} + (#2) } }
+        { d } { \__avianim_var_set:nn {#1} { \use:c {#1} + (#2) } }
+      }
+      { \__avianim_var_set:nn {#1} { \use:c {#1} + (#2) } }
+  }
+%% Outside animateinline it is an animation of its own at the video's frame
+%% rate (one video frame per frame).  Inside a frame (a part of animateinline
+%% with more than the \multiframe) it cannot make frames: an error.
+\NewDocumentCommand \multiframe { m m +m }
+  {
+    \bool_if:NTF \l__avianim_frame_bool
+      { \msg_error:nn { avianim } { multiframe-in-frame } }
+      { \__avianim_multiframe:nnn {#1} {#2} {#3} }
+  }
+\msg_new:nnn { avianim } { multiframe-in-frame }
+  {
+    \token_to_str:N \multiframe \ must~be~alone~between~
+    \token_to_str:N \newframe s;~it~is~ignored~here.
+  }
+\cs_new_protected:Npn \__avianim_multiframe:nnn #1#2#3
+  {
+    \group_begin:
+    \bool_if:NF \l__avianim_active_bool { \__avianim_start:nn { } { \__avianim_fps: } }
+    \seq_clear:N \l__avianim_vars_seq
+    \clist_map_inline:nn {#2} { \__avianim_var_init:w ##1 \q_stop }
+    \int_step_inline:nn {#1}
+      {
+        \__avianim_typeset:n {#3}
+        \seq_map_inline:Nn \l__avianim_vars_seq { \__avianim_var_step:nn ####1 }
+      }
+    \group_end:
+  }
+
+%% ---------------------------------------------------------------- animateinline
+%% The body is split at \newframe; a part that is only a \multiframe makes
+%% its own frames, any other part is one frame.
+\cs_new_protected:Npn \__avianim_part:n #1
+  {
+    \tl_set:Nn \l__avianim_part_tl {#1}
+    % [rate] or * right after \newframe
+    \tl_if_head_eq_charcode:nNT {#1} *
+      { \tl_set:Ne \l__avianim_part_tl { \tl_tail:N \l__avianim_part_tl } }
+    \exp_last_unbraced:NV \__avianim_part_rate:w \l__avianim_part_tl \q_nil \q_stop
+  }
+\cs_new_protected:Npn \__avianim_part_rate:w #1 \q_nil \q_stop
+  {
+    \peek_meaning_remove_ignore_spaces:NTF [
+      { \__avianim_rate_arg:w }
+      { \__avianim_part_body:w }
+    #1 \q_nil
+  }
+\cs_new_protected:Npn \__avianim_part_body:w #1 \q_nil { \__avianim_part_body:n {#1} }
+\cs_new_protected:Npn \__avianim_rate_arg:w #1 ] #2 \q_nil
+  {
+    \__avianim_set_rate:n {#1}
+    \__avianim_part_body:n {#2}
+  }
+\cs_new_protected:Npn \__avianim_part_body:n #1
+  { \__avianim_part_trimmed:e { \tl_trim_spaces:n {#1} } }
+\cs_new_protected:Npn \__avianim_part_trimmed:n #1
+  {
+    \tl_if_blank:nF {#1}
+      {
+        \tl_if_head_eq_meaning:nNTF {#1} \multiframe
+          {#1}
+          { \__avianim_typeset:n {#1} }
+      }
+  }
+\cs_generate_variant:Nn \__avianim_part:n { V }
+\cs_generate_variant:Nn \__avianim_part_trimmed:n { e }
+
+\cs_new_protected:Npn \__avianim_start:nn #1#2
+  {
+    \keys_set:nn { avianim } {#1}
+    \bool_set_true:N \l__avianim_active_bool
+    \__avianim_set_rate:n {#2}
+    \fp_gzero:N \g__avianim_time_fp
+    \int_gzero:N \g__avianim_shown_int
+  }
+\NewDocumentEnvironment { animateinline } { O{} m +b }
+  {
+    \group_begin:
+    \__avianim_start:nn {#1} {#2}
+    \seq_set_split:Nnn \l__avianim_frames_seq { \newframe } {#3}
+    \seq_map_inline:Nn \l__avianim_frames_seq { \__avianim_part:n {##1} }
+    \group_end:
+  }
+  { }
+\NewEnvironmentCopy { avianim } { animateinline }
+\cs_set_protected:Npn \newframe { \msg_error:nn { avianim } { newframe } }
+\msg_new:nnn { avianim } { newframe } { \token_to_str:N \newframe \ outside~animateinline }
+
+%% ---------------------------------------------------------------- \animategraphics
+%% frames base<first> ... base<last>; a first number with leading zeros keeps
+%% its width (frame001, frame002, ...)
+\NewDocumentCommand \animategraphics { O{} m m m m }
+  {
+    \group_begin:
+    \__avianim_start:nn {#1} {#2}
+    \int_set:Nn \l__avianim_digits_int { \tl_count:n {#4} }
+    \int_step_inline:nnn {#4} {#5}
+      {
+        % the options and the file name are expanded first (graphicx reads them as text)
+        \hbox_set:Nn \l__avianim_frame_box
+          {
+            \use:e
+              {
+                \exp_not:N \includegraphics
+                  [
+                    \tl_if_empty:NF \l__avianim_width_tl { width = \exp_not:V \l__avianim_width_tl , }
+                    \tl_if_empty:NF \l__avianim_height_tl { height = \exp_not:V \l__avianim_height_tl , }
+                    \tl_if_empty:NF \l__avianim_scale_tl { scale = \exp_not:V \l__avianim_scale_tl , }
+                  ]
+                  { \exp_not:n {#3} \prg_replicate:nn { \l__avianim_digits_int - \tl_count:e { \int_eval:n {##1} } } { 0 } ##1 }
+              }
+          }
+        \__avianim_ship:
+      }
+    \group_end:
+  }
+\endinput

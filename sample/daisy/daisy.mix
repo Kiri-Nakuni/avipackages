@@ -1,0 +1,47 @@
+% daisy.mix -- the accompaniment of daisy.tex (square waves); the voice is
+% defined and sung in daisy.tex with avivoice.sty
+% song = the first beat of the intro (\dviaviMark{song}); 150 beats a minute in 3/4
+inst bass { wave=square duty=0.5 adsr=2ms,180ms,0.35,60ms gain=-13dB }
+inst chord { wave=square duty=0.25 adsr=2ms,80ms,0.3,40ms gain=-23dB }
+
+track bass pan=-0.2
+  @song bass t150 o2 l4 q6
+    g r r | d r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    c r r | g r r | g r r | d r r
+    d r r | a r r | g r r | e r r
+    a r r | e r r | d r r | a r r
+    d r r | a r r | g r r | d r r
+    e r r | c r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    c r r | g r r | g r r | d r r
+    d r r | a r r | g r r | e r r
+    a r r | e r r | d r r | a r r
+    d r r | a r r | g r r | d r r
+    e r r | c r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    g r r | d r r | g r r | d r r
+    g2.
+
+track chord pan=0.25
+  @song chord t150 o4 l4 q5
+    r <d g b> <d g b> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <c d f+ a> <c d f+ a>
+    r <d g b> <d g b> | r <d g b> <d g b> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <c e g> <c e g> | r <c e g> <c e g> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <c d f+ a> <c d f+ a> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <e g b> <e g b>
+    r <c+ e g a> <c+ e g a> | r <c+ e g a> <c+ e g a> | r <d f+ a> <d f+ a> | r <d f+ a> <d f+ a>
+    r <c d f+ a> <c d f+ a> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <e g b> <e g b> | r <c e g> <c e g> | r <d g b> <d g b> | r <d f+ a> <d f+ a>
+    r <d g b> <d g b> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <c d f+ a> <c d f+ a>
+    r <d g b> <d g b> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <d g b> <d g b> | r <d g b> <d g b> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <c e g> <c e g> | r <c e g> <c e g> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <c d f+ a> <c d f+ a> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <e g b> <e g b>
+    r <c+ e g a> <c+ e g a> | r <c+ e g a> <c+ e g a> | r <d f+ a> <d f+ a> | r <d f+ a> <d f+ a>
+    r <c d f+ a> <c d f+ a> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <d g b> <d g b>
+    r <e g b> <e g b> | r <c e g> <c e g> | r <d g b> <d g b> | r <d f+ a> <d f+ a>
+    r <d g b> <d g b> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <c d f+ a> <c d f+ a>
+    r <d g b> <d g b> | r <c d f+ a> <c d f+ a> | r <d g b> <d g b> | r <d g b> <d g b>
+    <d g b>2.

@@ -1,0 +1,10 @@
+% paperwidth and paperheight make the screen and the page layout
+%! pages: 1
+%! log: PAPER-OK
+%! log: TEXT-OK
+\documentclass[paperwidth=192mm, paperheight=108mm, 12pt]{avi}
+\begin{document}
+\typeout{\ifdim\dimexpr\paperwidth-192truemm\relax<2sp\ifdim\dimexpr\paperwidth-192truemm\relax>-2sp\ifdim\dimexpr\paperheight-108truemm\relax<2sp\ifdim\dimexpr\paperheight-108truemm\relax>-2sp PAPER-OK\fi\fi\fi\fi}
+\typeout{\ifdim\textwidth=\dimexpr\paperwidth-2truecm\relax TEXT-OK\fi}
+本文
+\end{document}

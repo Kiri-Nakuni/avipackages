@@ -1,0 +1,152 @@
+%% avivoice.sty -- voices for dviavi: define them, make them speak and sing
+%%
+%%   \avivoiceDefine{daisy}{f0=110, lang=en, engine=square, vib={5Hz,8c}}
+%%   \avivoicePhoneme[daisy]{k}{noise=-3dB, dur=25ms}
+%%   \avivoiceSetup{ch=daisy}
+%%   \avivoiceSpeak{D.EY Z.IY / D.EY Z.IY}        % or \speak{text=..., ...}
+%%   \avivoiceSing{t150 o4 "D.EY Z.IY" d2. o- b2.} % or \sing{mml=..., ...}
+%%
+%% Voices and phonemes go to dviavi as sound.mix text (the `mixdef'
+%% special), so a document needs no mix file for them; a voice defined here
+%% replaces one of the same name in sound.mix.  Speech and song start at the
+%% frame they are given in (between frames: the next frame), like \speak of
+%% dviavi.sty, whose \speak this package replaces with one that keeps spaces
+%% (English text) and knows lang=.
+%%
+%% Keys of \avivoiceSetup, \speak, \sing, \avivoiceSpeak, \avivoiceSing:
+%%   ch     the voice (default: default)
+%%   lang   ja (romaji morae, KoNnNiChiWa) or en (ARPAbet syllables, D.EY)
+%%          (default: the voice's)
+%%   tone, speed, pace   as for \speak of dviavi.sty
+%%   gain   loudness of a song (1, 0.5, -6dB)
+%%   text   what \speak says;  mml   what \sing sings
+%% Voice keys (\avivoiceDefine) and phoneme keys (\avivoicePhoneme) are those
+%% of sound.mix; a value with a comma goes in braces: vib={5Hz,8c}.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesExplPackage{avivoice}{2026/11/23}{0.2}{voices for dviavi}
+\RequirePackage{dviavi}
+%% ---------------------------------------------------------------- state
+\prop_new:N \g__avivoice_voices_prop    % voice -> its parameters (sound.mix text)
+\prop_new:N \g__avivoice_phonemes_prop  % voice -> its phoneme blocks
+\str_new:N \l__avivoice_params_str
+\str_new:N \l__avivoice_args_str
+\tl_new:N \l__avivoice_tmp_tl
+
+\keys_define:nn { avivoice }
+  {
+    ch    .str_set:N = \l_avivoice_ch_str ,
+    ch    .initial:n = default ,
+    lang  .str_set:N = \l_avivoice_lang_str ,
+    tone  .str_set:N = \l_avivoice_tone_str ,
+    tone  .initial:n = normal ,
+    speed .str_set:N = \l_avivoice_speed_str ,
+    speed .initial:n = 1 ,
+    pace  .str_set:N = \l_avivoice_pace_str ,
+    pace  .initial:n = 1 ,
+    gain  .str_set:N = \l_avivoice_gain_str ,
+    text  .str_set:N = \l_avivoice_text_str ,
+    mml   .str_set:N = \l_avivoice_mml_str ,
+  }
+
+%% ---------------------------------------------------------------- specials
+%% Sound: into the frame being built (only on the first of repeated frames).
+\cs_new_protected:Npn \__avivoice_sound:n #1
+  { \dviavi_sound:n { \tl_to_str:n { dviavi: } ~ #1 } }
+%% Definitions: always, into the frame being built or the next one shipped.
+\cs_new_protected:Npn \__avivoice_mixdef:n #1
+  { \dviavi_special:n { \tl_to_str:n { dviavi: ~ mixdef } ~ #1 } }
+
+%% {k=v, k, ...} to sound.mix words `k=v k' in #1
+\cs_new_protected:Npn \__avivoice_params:Nn #1 #2
+  {
+    \str_clear:N #1
+    \keyval_parse:nnn
+      { \__avivoice_param_flag:Nn #1 }
+      { \__avivoice_param:Nnn #1 }
+      { #2 }
+  }
+\cs_new_protected:Npn \__avivoice_param_flag:Nn #1 #2
+  { \str_put_right:Ne #1 { ~ \tl_to_str:n {#2} } }
+\cs_new_protected:Npn \__avivoice_param:Nnn #1 #2 #3
+  { \str_put_right:Ne #1 { ~ \tl_to_str:n {#2} = \tl_to_str:n {#3} } }
+
+%% ---------------------------------------------------------------- voices
+\cs_new_protected:Npn \__avivoice_emit_voice:n #1
+  {
+    \prop_get:NnNF \g__avivoice_voices_prop {#1} \l__avivoice_params_str
+      { \msg_error:nnn { avivoice } { no-voice } {#1} }
+    \prop_get:NnNF \g__avivoice_phonemes_prop {#1} \l__avivoice_tmp_tl
+      { \tl_clear:N \l__avivoice_tmp_tl }
+    \__avivoice_mixdef:n
+      { voice ~ \tl_to_str:n {#1} ~ \c_left_brace_str
+        \l__avivoice_params_str \l__avivoice_tmp_tl \c_space_tl \c_right_brace_str }
+  }
+\NewDocumentCommand \avivoiceDefine { m m }
+  {
+    \__avivoice_params:Nn \l__avivoice_params_str {#2}
+    \prop_gput:NnV \g__avivoice_voices_prop {#1} \l__avivoice_params_str
+    \__avivoice_emit_voice:n {#1}
+  }
+%% \avivoicePhoneme[voice]{name}{keys}: without a voice, for all voices
+\NewDocumentCommand \avivoicePhoneme { o m m }
+  {
+    \__avivoice_params:Nn \l__avivoice_params_str {#3}
+    \tl_set:Ne \l__avivoice_tmp_tl
+      { phoneme ~ \tl_to_str:n {#2} ~ \c_left_brace_str
+        \l__avivoice_params_str \c_space_tl \c_right_brace_str }
+    \IfNoValueTF {#1}
+      { \exp_args:NV \__avivoice_mixdef:n \l__avivoice_tmp_tl }
+      {
+        \prop_if_in:NnTF \g__avivoice_voices_prop {#1}
+          {
+            \prop_gput:Nne \g__avivoice_phonemes_prop {#1}
+              {
+                \prop_item:Nn \g__avivoice_phonemes_prop {#1}
+                \c_space_tl \exp_not:V \l__avivoice_tmp_tl
+              }
+            \__avivoice_emit_voice:n {#1}
+          }
+          { \msg_error:nnn { avivoice } { no-voice } {#1} }
+      }
+  }
+\msg_new:nnn { avivoice } { no-voice }
+  { Voice~`#1'~is~not~defined~(\token_to_str:N \avivoiceDefine). }
+
+%% ---------------------------------------------------------------- speech, song
+\NewDocumentCommand \avivoiceSetup { m } { \keys_set:nn { avivoice } {#1} }
+
+%% ` lang=..' when one is set
+\cs_new:Npn \__avivoice_lang:
+  { \str_if_empty:NF \l_avivoice_lang_str { \c_space_tl lang = \l_avivoice_lang_str } }
+
+\cs_new_protected:Npn \__avivoice_speak:
+  {
+    \__avivoice_sound:n
+      {
+        speak ~ ch = \l_avivoice_ch_str
+        \c_space_tl tone = \l_avivoice_tone_str
+        \c_space_tl speed = \l_avivoice_speed_str
+        \c_space_tl pace = \l_avivoice_pace_str
+        \__avivoice_lang:
+        \c_space_tl text = \c_left_brace_str \l_avivoice_text_str \c_right_brace_str
+      }
+  }
+\cs_new_protected:Npn \__avivoice_sing:
+  {
+    \__avivoice_sound:n
+      {
+        sing ~ ch = \l_avivoice_ch_str
+        \__avivoice_lang:
+        \str_if_empty:NF \l_avivoice_gain_str { \c_space_tl gain = \l_avivoice_gain_str }
+        \c_space_tl mml = \c_left_brace_str \l_avivoice_mml_str \c_right_brace_str
+      }
+  }
+\RenewDocumentCommand \speak { m }
+  { \group_begin: \keys_set:nn { avivoice } {#1} \__avivoice_speak: \group_end: }
+\NewDocumentCommand \sing { m }
+  { \group_begin: \keys_set:nn { avivoice } {#1} \__avivoice_sing: \group_end: }
+\NewDocumentCommand \avivoiceSpeak { O{} m }
+  { \group_begin: \keys_set:nn { avivoice } { #1 , text = {#2} } \__avivoice_speak: \group_end: }
+\NewDocumentCommand \avivoiceSing { O{} m }
+  { \group_begin: \keys_set:nn { avivoice } { #1 , mml = {#2} } \__avivoice_sing: \group_end: }
+\endinput
