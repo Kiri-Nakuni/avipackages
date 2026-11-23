@@ -1,4 +1,4 @@
-# avi
+# avipackages
 
 [dviavi](https://github.com/Kiri-Nakuni/dviavi)（DVI の 1 ページを動画の 1 フレームにするツール）で動画を作るための
 (u)pLaTeX のクラスとパッケージ。
@@ -24,7 +24,7 @@
 dviavi のリポジトリ（`dviavi.tex`・`dviavi.sty` と dviavi 本体）が要る。
 
 ```sh
-export TEXINPUTS=/path/to/avi/tex//:/path/to/dviavi/tex//:
+export TEXINPUTS=/path/to/avipackages/tex//:/path/to/dviavi/tex//:
 uplatex foo.tex
 dviavi foo.dvi
 ```
