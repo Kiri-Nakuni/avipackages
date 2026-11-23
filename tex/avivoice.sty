@@ -22,6 +22,22 @@
 %%   text   what \speak says;  mml   what \sing sings
 %% Voice keys (\avivoiceDefine) and phoneme keys (\avivoicePhoneme) are those
 %% of sound.mix; a value with a comma goes in braces: vib={5Hz,8c}.
+%%
+%% Japanese text may be written in kana (きょうは、いいてんき。): it is turned
+%% into romaji morae (KyoUWa/IITeNnKi/).  Write it as it is pronounced
+%% (は → わ).  ASCII passes unchanged, so romaji and kana can be mixed.
+%%
+%% For other packages (expl3):
+%%   \avivoice_romaji:nN {kana} \tl         the romaji of a kana reading
+%%   \avivoice_units:nnN {lang} {text} \int  morae (ja) or syllables (en)
+%%                                           that \speak gives time to,
+%%                                           pauses (/ _) included
+%%   \avivoice_mora:n {voice}                its mora length in seconds
+%%                                           (0.15 unless \avivoiceDefine
+%%                                           gave mora=), expandable
+%%   \avivoice_lang:n {voice}                its language (ja unless given)
+%%   \avivoice_speech_seconds:nnnnN {voice} {lang} {pace} {text} \fp
+%%                                           how long \speak talks
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesExplPackage{avivoice}{2026/11/23}{0.2}{voices for dviavi}
 \RequirePackage{dviavi}
@@ -31,6 +47,8 @@
 \str_new:N \l__avivoice_params_str
 \str_new:N \l__avivoice_args_str
 \tl_new:N \l__avivoice_tmp_tl
+\prop_new:N \g__avivoice_mora_prop      % voice -> mora length (seconds)
+\prop_new:N \g__avivoice_lang_prop      % voice -> ja / en
 
 \keys_define:nn { avivoice }
   {
@@ -44,7 +62,7 @@
     pace  .str_set:N = \l_avivoice_pace_str ,
     pace  .initial:n = 1 ,
     gain  .str_set:N = \l_avivoice_gain_str ,
-    text  .str_set:N = \l_avivoice_text_str ,
+    text  .tl_set:N = \l_avivoice_text_tl ,
     mml   .str_set:N = \l_avivoice_mml_str ,
   }
 
@@ -83,10 +101,29 @@
   }
 \NewDocumentCommand \avivoiceDefine { m m }
   {
+    \prop_gremove:Nn \g__avivoice_mora_prop {#1}
+    \prop_gremove:Nn \g__avivoice_lang_prop {#1}
+    \keyval_parse:nnn { \use_none:n } { \__avivoice_note:nnn {#1} } {#2}
     \__avivoice_params:Nn \l__avivoice_params_str {#2}
     \prop_gput:NnV \g__avivoice_voices_prop {#1} \l__avivoice_params_str
     \__avivoice_emit_voice:n {#1}
   }
+%% what TeX needs to know of a voice: its mora length and language
+\cs_new_protected:Npn \__avivoice_note:nnn #1#2#3
+  {
+    \str_case:nn {#2}
+      {
+        { mora } { \prop_gput:Nne \g__avivoice_mora_prop {#1} { \fp_eval:n { \dviavi_seconds:n {#3} } } }
+        { lang } { \prop_gput:Nne \g__avivoice_lang_prop {#1} { \tl_to_str:n {#3} } }
+      }
+  }
+\cs_new:Npn \avivoice_mora:n #1
+  { \prop_if_in:NnTF \g__avivoice_mora_prop {#1} { \prop_item:Nn \g__avivoice_mora_prop {#1} } { 0.15 } }
+\cs_new:Npn \avivoice_lang:n #1
+  { \prop_if_in:NnTF \g__avivoice_lang_prop {#1} { \prop_item:Nn \g__avivoice_lang_prop {#1} } { ja } }
+\cs_generate_variant:Nn \avivoice_lang:n { V }
+\cs_generate_variant:Nn \avivoice_mora:n { V }
+
 %% \avivoicePhoneme[voice]{name}{keys}: without a voice, for all voices
 \NewDocumentCommand \avivoicePhoneme { o m m }
   {
@@ -112,6 +149,168 @@
 \msg_new:nnn { avivoice } { no-voice }
   { Voice~`#1'~is~not~defined~(\token_to_str:N \avivoiceDefine). }
 
+%% ---------------------------------------------------------------- kana
+%% each kana: its romaji mora; a small kana: + and the sound it joins with
+\prop_new:N \c__avivoice_kana_prop
+\cs_set_protected:Npn \__avivoice_tmp:w #1#2#3
+  {
+    \prop_gput:Nnn \c__avivoice_kana_prop {#1} {#3}
+    \prop_gput:Nnn \c__avivoice_kana_prop {#2} {#3}
+    \__avivoice_tmp_next:w
+  }
+\cs_set:Npn \__avivoice_tmp_next:w #1
+  { \quark_if_recursion_tail_stop:n {#1} \__avivoice_tmp:w {#1} }
+\__avivoice_tmp_next:w
+  {あ}{ア}{A} {い}{イ}{I} {う}{ウ}{U} {え}{エ}{E} {お}{オ}{O}
+  {か}{カ}{Ka} {き}{キ}{Ki} {く}{ク}{Ku} {け}{ケ}{Ke} {こ}{コ}{Ko}
+  {が}{ガ}{Ga} {ぎ}{ギ}{Gi} {ぐ}{グ}{Gu} {げ}{ゲ}{Ge} {ご}{ゴ}{Go}
+  {さ}{サ}{Sa} {し}{シ}{Shi} {す}{ス}{Su} {せ}{セ}{Se} {そ}{ソ}{So}
+  {ざ}{ザ}{Za} {じ}{ジ}{Ji} {ず}{ズ}{Zu} {ぜ}{ゼ}{Ze} {ぞ}{ゾ}{Zo}
+  {た}{タ}{Ta} {ち}{チ}{Chi} {つ}{ツ}{Tsu} {て}{テ}{Te} {と}{ト}{To}
+  {だ}{ダ}{Da} {ぢ}{ヂ}{Ji} {づ}{ヅ}{Zu} {で}{デ}{De} {ど}{ド}{Do}
+  {な}{ナ}{Na} {に}{ニ}{Ni} {ぬ}{ヌ}{Nu} {ね}{ネ}{Ne} {の}{ノ}{No}
+  {は}{ハ}{Ha} {ひ}{ヒ}{Hi} {ふ}{フ}{Fu} {へ}{ヘ}{He} {ほ}{ホ}{Ho}
+  {ば}{バ}{Ba} {び}{ビ}{Bi} {ぶ}{ブ}{Bu} {べ}{ベ}{Be} {ぼ}{ボ}{Bo}
+  {ぱ}{パ}{Pa} {ぴ}{ピ}{Pi} {ぷ}{プ}{Pu} {ぺ}{ペ}{Pe} {ぽ}{ポ}{Po}
+  {ま}{マ}{Ma} {み}{ミ}{Mi} {む}{ム}{Mu} {め}{メ}{Me} {も}{モ}{Mo}
+  {や}{ヤ}{Ya} {ゆ}{ユ}{Yu} {よ}{ヨ}{Yo}
+  {ら}{ラ}{Ra} {り}{リ}{Ri} {る}{ル}{Ru} {れ}{レ}{Re} {ろ}{ロ}{Ro}
+  {わ}{ワ}{Wa} {ゐ}{ヰ}{I} {ゑ}{ヱ}{E} {を}{ヲ}{O} {ん}{ン}{Nn}
+  {ゔ}{ヴ}{Bu} {っ}{ッ}{Q} {ー}{ー}{-}
+  {ゃ}{ャ}{+ya} {ゅ}{ュ}{+yu} {ょ}{ョ}{+yo} {ゎ}{ヮ}{+wa}
+  {ぁ}{ァ}{+a} {ぃ}{ィ}{+i} {ぅ}{ゥ}{+u} {ぇ}{ェ}{+e} {ぉ}{ォ}{+o}
+  {ゕ}{ヵ}{Ka} {ゖ}{ヶ}{Ke}
+  {、}{。}{/} {，}{．}{/} {！}{？}{/} {…}{‥}{/}
+  {「}{」}{} {『}{』}{} {（}{）}{} {・}{〜}{} {～}{　}{}
+  \q_recursion_tail {} {} \q_recursion_stop
+%% ASCII that passes unchanged (romaji, accent and pauses); ! ? become pauses
+\str_const:Nn \c__avivoice_ascii_str
+  { ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'-/_.,()[]: }
+%% small kana joined to the mora before (Kya, Sha, Fa, Thi, Twu, Wi, Ye, ...)
+\seq_const_from_clist:Nn \c__avivoice_join_seq
+  {
+    { (Sh|Ch|J) i \+ y ([auo]) } { \1\2 } ,
+    { ([A-Z][a-z]?) i \+ y ([auo]) } { \1y\2 } ,
+    { (Sh|Ch|J) i \+ e } { \1e } ,
+    { (F|B|Ts) u \+ ([aieo]) } { \1\2 } ,
+    { Te \+ i } { Thi } , { De \+ i } { Dhi } ,
+    { To \+ u } { Twu } , { Do \+ u } { Dwu } ,
+    { U \+ ([ieo]) } { W\1 } , { I \+ e } { Ye } ,
+    { \+ y ([auo]) } { Y\1 } , { \+ wa } { Wa } ,
+    { \+ a } { A } , { \+ i } { I } , { \+ u } { U } , { \+ e } { E } , { \+ o } { O } ,
+  }
+\seq_new:N \l__avivoice_unknown_seq
+\tl_new:N \l__avivoice_mora_tl
+\cs_new_protected:Npn \avivoice_romaji:nN #1#2
+  {
+    \tl_clear:N #2
+    \seq_clear:N \l__avivoice_unknown_seq
+    \tl_map_inline:nn {#1}
+      {
+        \prop_get:NnNTF \c__avivoice_kana_prop {##1} \l__avivoice_mora_tl
+          { \tl_put_right:NV #2 \l__avivoice_mora_tl }
+          {
+            \str_case:nnF {##1}
+              { { ! } { \tl_put_right:Nn #2 { / } } { ? } { \tl_put_right:Nn #2 { / } } }
+              {
+                \str_if_in:NnTF \c__avivoice_ascii_str {##1}
+                  { \tl_put_right:Ne #2 { \tl_to_str:n {##1} } }
+                  { \seq_put_right:Nn \l__avivoice_unknown_seq {##1} }
+              }
+          }
+      }
+    \seq_map_inline:Nn \c__avivoice_join_seq { \__avivoice_join:nnN ##1 #2 }
+    \seq_if_empty:NF \l__avivoice_unknown_seq
+      {
+        \msg_error:nne { avivoice } { no-reading }
+          { \seq_use:Nn \l__avivoice_unknown_seq { } }
+      }
+  }
+\cs_new_protected:Npn \__avivoice_join:nnN #1#2#3 { \regex_replace_all:nnN {#1} {#2} #3 }
+\cs_generate_variant:Nn \avivoice_romaji:nN { V }
+\msg_new:nnn { avivoice } { no-reading }
+  { No~reading~for~`#1':~write~the~reading~in~kana~(or~romaji). }
+
+%% ---------------------------------------------------------------- length
+%% Counted as dviavi counts: Japanese splits into morae at capitals (and at
+%% every other character); a mora of letters, -, / or _ takes time, ' and the
+%% rest do not.  English: syllables between spaces or |, and / _.
+\int_new:N \l__avivoice_kind_int   % the current token: 0 none, 1 letters, 2 - / _, 3 other
+\str_const:Nn \c__avivoice_upper_str { ABCDEFGHIJKLMNOPQRSTUVWXYZ }
+\str_const:Nn \c__avivoice_lower_str { abcdefghijklmnopqrstuvwxyz }
+\cs_new_protected:Npn \__avivoice_token_end:N #1
+  {
+    \int_compare:nNnT { \l__avivoice_kind_int } = { 1 } { \int_incr:N #1 }
+    \int_compare:nNnT { \l__avivoice_kind_int } = { 2 } { \int_incr:N #1 }
+  }
+\cs_new_protected:Npn \avivoice_units:nnN #1#2#3
+  {
+    \int_zero:N #3
+    \int_zero:N \l__avivoice_kind_int
+    \str_if_eq:nnTF {#1} { en }
+      { \str_map_inline:nn {#2} { \__avivoice_unit_en:nN {##1} #3 } }
+      { \str_map_inline:nn {#2} { \__avivoice_unit_ja:nN {##1} #3 } }
+    \__avivoice_token_end:N #3
+  }
+%% English: a space or | ends a syllable; / and _ are pauses; ' is nothing
+\cs_new_protected:Npn \__avivoice_unit_en:nN #1#2
+  {
+    \tl_if_blank:nTF {#1}
+      { \__avivoice_token_end:N #2 \int_zero:N \l__avivoice_kind_int }
+      {
+        \str_case:nnF {#1}
+          {
+            { | } { \__avivoice_token_end:N #2 \int_zero:N \l__avivoice_kind_int }
+            { / } { \__avivoice_token_end:N #2 \int_incr:N #2 \int_zero:N \l__avivoice_kind_int }
+            { _ } { \__avivoice_token_end:N #2 \int_incr:N #2 \int_zero:N \l__avivoice_kind_int }
+            { ' } { \__avivoice_token_end:N #2 \int_zero:N \l__avivoice_kind_int }
+          }
+          { \int_set:Nn \l__avivoice_kind_int { 1 } }
+      }
+  }
+%% Japanese: a lower-case letter goes on the mora; anything else starts one
+\cs_new_protected:Npn \__avivoice_unit_ja:nN #1#2
+  {
+    \str_if_in:NnTF \c__avivoice_lower_str {#1}
+      {
+        \int_case:nn { \l__avivoice_kind_int }
+          { { 0 } { \int_set:Nn \l__avivoice_kind_int { 1 } } { 2 } { \int_set:Nn \l__avivoice_kind_int { 3 } } }
+      }
+      {
+        \__avivoice_token_end:N #2
+        \tl_if_blank:nTF {#1}
+          { \int_set:Nn \l__avivoice_kind_int { 3 } }
+          {
+            \str_if_in:NnTF \c__avivoice_upper_str {#1}
+              { \int_set:Nn \l__avivoice_kind_int { 1 } }
+              {
+                \str_case:nnF {#1}
+                  { { - } { \int_set:Nn \l__avivoice_kind_int { 2 } }
+                    { / } { \int_set:Nn \l__avivoice_kind_int { 2 } }
+                    { _ } { \int_set:Nn \l__avivoice_kind_int { 2 } } }
+                  { \int_set:Nn \l__avivoice_kind_int { 3 } }
+              }
+          }
+      }
+  }
+
+%% how long \speak{ch=#1, lang=#2, pace=#3, text=#4} talks, into fp #5;
+%% pace is a factor of the mora, or a length (ms, s, f)
+\int_new:N \l__avivoice_units_int
+\str_new:N \l__avivoice_lang_str
+\cs_new_protected:Npn \avivoice_speech_seconds:nnnnN #1#2#3#4#5
+  {
+    \str_set:Ne \l__avivoice_lang_str { \tl_if_blank:nTF {#2} { \avivoice_lang:n {#1} } {#2} }
+    \str_if_eq:VnTF \l__avivoice_lang_str { en }
+      { \tl_set:Ne \l__avivoice_tmp_tl { \tl_to_str:n {#4} } }
+      { \avivoice_romaji:nN {#4} \l__avivoice_tmp_tl }
+    \avivoice_units:VVN \l__avivoice_lang_str \l__avivoice_tmp_tl \l__avivoice_units_int
+    \regex_match:nnTF { [sf] \Z } {#3}
+      { \fp_set:Nn #5 { \l__avivoice_units_int * \dviavi_seconds:n {#3} } }
+      { \fp_set:Nn #5 { \l__avivoice_units_int * \avivoice_mora:n {#1} * (#3) } }
+  }
+\cs_generate_variant:Nn \avivoice_units:nnN { VVN }
+
 %% ---------------------------------------------------------------- speech, song
 \NewDocumentCommand \avivoiceSetup { m } { \keys_set:nn { avivoice } {#1} }
 
@@ -119,8 +318,18 @@
 \cs_new:Npn \__avivoice_lang:
   { \str_if_empty:NF \l_avivoice_lang_str { \c_space_tl lang = \l_avivoice_lang_str } }
 
+%% the text to say: kana turned into romaji for Japanese
+\str_new:N \l__avivoice_text_str
 \cs_new_protected:Npn \__avivoice_speak:
   {
+    \str_set:Ne \l__avivoice_lang_str
+      { \str_if_empty:NTF \l_avivoice_lang_str { \avivoice_lang:V \l_avivoice_ch_str } { \l_avivoice_lang_str } }
+    \str_if_eq:VnTF \l__avivoice_lang_str { en }
+      { \str_set:NV \l__avivoice_text_str \l_avivoice_text_tl }
+      {
+        \avivoice_romaji:VN \l_avivoice_text_tl \l__avivoice_tmp_tl
+        \str_set:NV \l__avivoice_text_str \l__avivoice_tmp_tl
+      }
     \__avivoice_sound:n
       {
         speak ~ ch = \l_avivoice_ch_str
@@ -128,7 +337,7 @@
         \c_space_tl speed = \l_avivoice_speed_str
         \c_space_tl pace = \l_avivoice_pace_str
         \__avivoice_lang:
-        \c_space_tl text = \c_left_brace_str \l_avivoice_text_str \c_right_brace_str
+        \c_space_tl text = \c_left_brace_str \l__avivoice_text_str \c_right_brace_str
       }
   }
 \cs_new_protected:Npn \__avivoice_sing:

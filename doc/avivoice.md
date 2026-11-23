@@ -52,7 +52,23 @@
   英語の音素は [sound-mix.md](https://github.com/Kiri-Nakuni/dviavi/blob/main/doc/sound-mix.md#音素とモーラ)。
 - 英語の `text` でも `/`（句の区切り）と `_`（休み）が使える。1 音節が `mora`（`pace`）1 つ分の長さになる。
 
+- 日本語は**かなで書いてもよい**（`\avivoiceSpeak{きょうわ、いいてんき。}`）。ローマ字のモーラ（`KyoUWa/IITeNnKi/`）に変えて渡す。
+  発音どおりに書く（は → わ、へ → え）。`、` `。` `！` `？` は句の区切り（`/`）、`ー` は長音、`っ` は無音、
+  ファ・ティ・ディ・トゥ・ドゥ・ウィ・シェなども使える。ASCII はそのまま通るので、ローマ字と混ぜられる。読めない文字（漢字など）はエラー。
+
 | 書き方 | 例 |
 |---|---|
 | 日本語（`lang=ja`） | `"KoNnNiChiWa"`（1 モーラ 1 音符）、`"DeI\|Ji-"`（`\|` ごとに 1 音符） |
 | 英語（`lang=en`） | `"D.EY Z.IY"`（1 音節 1 音符）、`"S.W.IY.T"`（オンセット・核・コーダ） |
+
+## ほかのパッケージから（expl3）
+
+| 関数 | 内容 |
+|---|---|
+| `\avivoice_romaji:nN {かな} \tl` | かなの読みをローマ字のモーラにする |
+| `\avivoice_units:nnN {lang} {テキスト} \int` | `\speak` が時間を取る単位の数（日本語はモーラ、英語は音節。`/` `_` の休みも含む） |
+| `\avivoice_mora:n {声}` | その声の 1 モーラの秒数（`\avivoiceDefine` の `mora=`、なければ 0.15）。展開可能 |
+| `\avivoice_lang:n {声}` | その声の言語（`lang=`、なければ `ja`）。展開可能 |
+| `\avivoice_speech_seconds:nnnnN {声} {lang} {pace} {テキスト} \fp` | `\speak` が話す長さ（秒）。dviavi と同じ数え方 |
+
+dvibiimsystem は、これで読み上げの長さを求めて場面の長さを決める。

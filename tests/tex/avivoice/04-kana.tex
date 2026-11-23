@@ -1,0 +1,11 @@
+% Japanese text in kana becomes romaji morae; kanji is an error
+%! pages: 2
+%! errors: 1
+%! special: text={KyoUWa/IITeNnKi/} = 1
+%! special: text={Dhi-BuIAI/Fa-SuTo} = 1
+\documentclass[fps=5,size=320x180]{avi}
+\usepackage{avivoice}
+\begin{document}
+\dviaviStill{1}{\avivoiceSpeak{きょうわ、いいてんき。}\avivoiceSpeak{ディーブイアイ、ファースト}}
+\dviaviStill{1}{\avivoiceSpeak{漢字}}
+\end{document}
