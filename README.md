@@ -25,7 +25,7 @@ dviavi のリポジトリ（`dviavi.tex`・`dviavi.sty` と dviavi 本体）が�
 
 ```sh
 export TEXINPUTS=/path/to/avipackages/tex//:/path/to/dviavi/tex//:
-uplatex foo.tex
+latex foo.tex
 dviavi foo.dvi
 ```
 
