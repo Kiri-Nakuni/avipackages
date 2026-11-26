@@ -1,0 +1,41 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: avipackages
+      # the tests need dviavi: its dviavi.tex, the program and the test runner
+      - uses: actions/checkout@v4
+        with:
+          repository: Kiri-Nakuni/dviavi
+          path: dviavi
+      - run: sudo apt-get update && sudo apt-get install -y libfreetype-dev pkg-config ffmpeg poppler-utils python3-pil
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: dviavi
+      - run: cargo build --release
+        working-directory: dviavi
+      - uses: TeX-Live/setup-texlive-action@v3
+        with:
+          packages: |
+            scheme-basic
+            collection-langjapanese
+            xcolor
+            graphics-def
+            pgf
+      - name: TeX tests (avi.cls, avianim, avivoice)
+        run: make test
+        working-directory: avipackages
